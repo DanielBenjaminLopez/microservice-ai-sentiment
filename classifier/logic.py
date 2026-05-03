@@ -1,35 +1,32 @@
 import os
 import google.generativeai as genai
 
-# Configuración global para no repetir trabajo
-def configure_genai():
-    api_key = os.getenv('GEMINI_API_KEY')
-    if api_key:
-        genai.configure(api_key=api_key)
-        return genai.GenerativeModel('gemini-1.5-flash')
-    return None
-
-# Instanciamos el modelo una sola vez al cargar el módulo
-model = configure_genai()
-
 def analyze_sentiment(text):
-    if not text or not model:
+    if not text:
         return {"label": "neutral"}
     
-    prompt = (
-        "Analiza el sentimiento del siguiente texto y responde "
-        "únicamente con una palabra en minúsculas: 'positivo', 'negativo' o 'neutral'. "
-        f"Texto: {text}"
-    )
-    
+    # 1. Intentar obtener la KEY en cada llamada si algo falló al inicio
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        return {"label": "error", "detail": "Variable GEMINI_API_KEY no encontrada en el entorno"}
+
     try:
+        # 2. Configuración y modelo
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        prompt = (
+            "Responde solo con una palabra: positivo, negativo o neutral. "
+            f"Texto: {text}"
+        )
+        
         response = model.generate_content(prompt)
-        # El strip() es vital por si la IA agrega espacios o saltos de línea
         label = response.text.strip().lower()
         
         if label in ['positivo', 'negativo', 'neutral']:
             return {"label": label}
-        return {"label": "neutral"}
-    except Exception:
-        # En producción, aquí deberías loguear el error real
-        return {"label": "neutral"}
+        return {"label": "neutral", "debug": f"IA respondió: {label}"}
+
+    except Exception as e:
+        # 3. VER EL ERROR REAL
+        return {"label": "error", "detail": str(e)}
