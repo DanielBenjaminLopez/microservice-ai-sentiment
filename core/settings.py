@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-&j@7z+3r^q6^_&pombc-&j$f49s*zq1lz8az3r@0^5lv4mzz^d
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['microservice-ai-sentiment.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
