@@ -18,13 +18,13 @@ def before_scenario(context, scenario):
     logic_module.model = mock_model
     
     # Configuramos respuestas por defecto según el texto de entrada
-    def mock_generate_content(prompt):
+    def mock_generate_content(prompt, generation_config=None):
         mock_response = Mock()
         # Lógica simple para determinar sentimiento según palabras clave en el prompt
         if "feliz" in prompt.lower() or "bueno" in prompt.lower():
-            mock_response.text = "positivo"
+            mock_response.text = "positive"
         elif "triste" in prompt.lower() or "malo" in prompt.lower() or "problema" in prompt.lower():
-            mock_response.text = "negativo"
+            mock_response.text = "negative"
         else:
             mock_response.text = "neutral"
         return mock_response

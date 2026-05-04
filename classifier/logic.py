@@ -19,9 +19,9 @@ def get_gemini_model():
     
     try:
         genai.configure(api_key=api_key)
-        # Intenta con gemini-2.0-flash primero (modelo más nuevo)
-        model = genai.GenerativeModel('gemini-2.0-flash')
-        logger.info("✓ Modelo Gemini (gemini-2.0-flash) iniciado correctamente")
+        # Intenta con gemini-2.5-flash (modelo más nuevo y estable)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        logger.info("✓ Modelo Gemini (gemini-2.5-flash) iniciado correctamente")
         return model
     except Exception as e:
         logger.error(f"✗ Error al inicializar el modelo Gemini: {type(e).__name__}: {e}")
@@ -72,28 +72,45 @@ def analyze_sentiment(text):
         logger.error("✗ No es posible analizar sentimiento: API key de Gemini no configurada o inválida")
         return {"label": "neutral"}
 
-    # Prompt más explícito y directo
+    # Prompt altamente optimizado para respuesta consistente
     prompt = (
-        "Clasifica el sentimiento del siguiente texto en exactamente una palabra: "
-        "'positivo', 'negativo' o 'neutral'. "
-        "Responde SOLO la palabra, sin explicaciones ni puntuación adicional. "
-        f"Texto a analizar: {text}"
+        "You are a sentiment analyzer. Analyze the sentiment of the following text and respond with EXACTLY ONE WORD ONLY.\n\n"
+        "The response must be one of these three options:\n"
+        "- positive (if the text expresses positive sentiment)\n"
+        "- negative (if the text expresses negative sentiment)\n"
+        "- neutral (if the text is neutral or unclear)\n\n"
+        "Do NOT include any explanation, punctuation, or additional text. Only the single word.\n\n"
+        f"Text to analyze: {text}\n\n"
+        "Response:"
     )
     
     try:
         logger.debug(f"Enviando solicitud a Gemini para texto: '{text[:50]}...'")
-        response = model.generate_content(prompt)
-        label = response.text.strip().lower()
+        response = model.generate_content(prompt, generation_config={
+            "temperature": 0.1,
+            "top_p": 0.1,
+        })
         
-        logger.debug(f"Respuesta bruta de Gemini: '{response.text}'")
-        logger.debug(f"Respuesta procesada: '{label}'")
+        raw_response = response.text.strip()
+        logger.debug(f"[RAW RESPONSE] {repr(raw_response)}")
         
-        if label in ['positivo', 'negativo', 'neutral']:
-            logger.info(f"✓ Sentimiento detectado para '{text[:30]}...': {label}")
-            return {"label": label}
+        label = raw_response.lower().strip()
+        label = label.replace('"', '').replace("'", '').replace('.', '').replace(',', '').replace('!', '').replace('*', '')
         
-        logger.warning(f"✗ Respuesta inesperada del modelo: '{label}' (no coincide con valores válidos)")
-        return {"label": "neutral"}
+        logger.debug(f"[PROCESSED] '{label}'")
+        
+        if label in ['positive', 'positivo']:
+            logger.info(f"✓ POSITIVE detectado para '{text[:30]}...': {label}")
+            return {"label": "positivo"}
+        elif label in ['negative', 'negativo']:
+            logger.info(f"✓ NEGATIVE detectado para '{text[:30]}...': {label}")
+            return {"label": "negativo"}
+        elif label in ['neutral']:
+            logger.info(f"✓ NEUTRAL detectado para '{text[:30]}...': {label}")
+            return {"label": "neutral"}
+        else:
+            logger.warning(f"✗ Respuesta no reconocida: '{raw_response}' -> '{label}'")
+            return {"label": "neutral"}
         
     except Exception as e:
         logger.error(f"✗ Error al analizar sentimiento: {type(e).__name__}: {e}", exc_info=True)
