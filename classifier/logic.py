@@ -19,14 +19,39 @@ def get_gemini_model():
     
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        logger.info("✓ Modelo Gemini iniciado correctamente")
+        # Intenta con gemini-2.0-flash primero (modelo más nuevo)
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        logger.info("✓ Modelo Gemini (gemini-2.0-flash) iniciado correctamente")
         return model
     except Exception as e:
         logger.error(f"✗ Error al inicializar el modelo Gemini: {type(e).__name__}: {e}")
+        logger.info("Intenta acceder a /api/list-models/ para ver modelos disponibles")
         return None
 
 model = get_gemini_model()
+
+def list_available_models():
+    """
+    Lista todos los modelos disponibles en la API de Gemini.
+    Útil para debugging.
+    """
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        return []
+    
+    try:
+        genai.configure(api_key=api_key)
+        models = genai.list_models()
+        available = []
+        for m in models:
+            available.append({
+                "name": m.name,
+                "display_name": m.display_name,
+            })
+        return available
+    except Exception as e:
+        logger.error(f"Error al listar modelos: {e}")
+        return []
 
 def analyze_sentiment(text):
     """

@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse
-from .logic import analyze_sentiment, model
+from .logic import analyze_sentiment, model, list_available_models
 import os
 import logging
 
@@ -38,3 +38,15 @@ def debug_view(request):
         debug_info["api_test"] = "SKIPPED - model is None"
     
     return JsonResponse(debug_info)
+
+def list_models_view(request):
+    """
+    Endpoint para listar todos los modelos disponibles en la API.
+    Útil para saber qué modelos puedes usar.
+    """
+    models = list_available_models()
+    return JsonResponse({
+        "available_models": models,
+        "current_model": "gemini-2.0-flash",
+        "total_models": len(models)
+    })
